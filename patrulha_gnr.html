@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b1a35">
+  <title>GNR — Patrulha</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --navy:        #0b1a35;
+      --navy-mid:    #122040;
+      --navy-card:   #1a2d52;
+      --navy-border: #243d6b;
+      --gold:        #c9a84c;
+      --gold-light:  #e4c26a;
+      --gold-dim:    rgba(201,168,76,.15);
+      --green:       #27c97a;
+      --red:         #e04040;
+      --text:        #dde5f4;
+      --muted:       #6e8ab8;
+      --white:       #ffffff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--navy);
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+
+    /* ── LAYOUT ── */
+    #app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .header {
+      background: var(--navy);
+      border-bottom: 1px solid var(--navy-border);
+      padding: 14px 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 10px; }
+
+    .header-logo {
+      width: 36px; height: 36px;
+      background: var(--gold-dim);
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+
+    .header-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: 2px;
+      color: var(--white);
+      text-transform: uppercase;
+    }
+
+    .header-sub {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 8px; }
+
+    .gps-badge {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      transition: all 0.3s;
+    }
+    .gps-badge.ok  { border-color: var(--green); color: var(--green); }
+    .gps-badge.err { border-color: var(--red);   color: var(--red);   }
+
+    .gps-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s;
+    }
+    .gps-badge.ok  .gps-dot { background: var(--green); animation: blink 2s infinite; }
+    .gps-badge.err .gps-dot { background: var(--red); }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── SCREENS ── */
+    .screen { display: none; flex: 1; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    .scroll-area { flex: 1; overflow-y: auto; padding: 20px 16px 40px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+
+    /* ── FORM CONTROLS ── */
+    .field { margin-bottom: 14px; }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .field select,
+    .field input {
+      width: 100%;
+      background: var(--navy);
+      border: 1px solid var(--navy-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      padding: 11px 14px;
+      outline: none;
+      appearance: none;
+      transition: border-color 0.2s;
+    }
+
+    .field select:focus,
+    .field input:focus { border-color: var(--gold); }
+
+    .field select option { background: var(--navy-card); }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 14px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      width: 100%;
+      padding: 15px 20px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--gold);
+      color: var(--navy);
+    }
+    .btn-primary:not(:disabled):hover { background: var(--gold-light); }
+
+    .btn-green {
+      background: var(--green);
+      color: var(--navy);
+    }
+    .btn-red {
+      background: var(--red);
+      color: var(--white);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--navy-border);
+      color: var(--muted);
+    }
+
+    /* ── LOGIN SCREEN ── */
+    #screen-login .scroll-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      min-height: calc(100vh - 65px);
+    }
+
+    .login-emblem {
+      width: 90px; height: 90px;
+      background: var(--gold-dim);
+      border: 2px solid var(--gold);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .login-emblem svg { width: 44px; height: 44px; fill: var(--gold); }
+
+    .login-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--white);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .login-sub {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .login-btn-wrap { width: 100%; max-width: 320px; }
+
+    .redirect-note {
+      margin-top: 20px;
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      border-radius: 10px;
+      padding: 14px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .redirect-note p {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .redirect-note code {
+      display: block;
+      font-size: 11px;
+      color: var(--gold);
+      background: var(--navy);
+      padding: 8px 10px;
+      border-radius: 6px;
+      word-break: break-all;
+    }
+
+    /* ── ACTIVE PATROL SCREEN ── */
+    .status-bar {
+      background: linear-gradient(135deg, #0d3320 0%, #0a2818 100%);
+      border: 1px solid #1e6640;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-bar.inactive {
+      background: linear-gradient(135deg, #2a0d0d 0%, #1f0a0a 100%);
+      border-color: #6e1a1a;
+    }
+
+    .status-left { display: flex; align-items: center; gap: 12px; }
+
+    .pulse-ring {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--green);
+      position: relative;
+    }
+    .pulse-ring::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid var(--green);
+      animation: ripple 2s infinite;
+    }
+    @keyframes ripple {
+      0%   { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+
+    .status-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--green);
+    }
+
+    .timer {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--white);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .info-tile {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .info-tile .tile-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .info-tile .tile-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .pos-card {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pos-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .pos-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      color: var(--gold);
+      letter-spacing: 0.5px;
+    }
+
+    .pos-acc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--navy-border);
+      margin: 18px 0;
+    }
+
+    /* ── ALERT ── */
+    .alert {
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .alert.err  { background: rgba(224,64,64,.15); border: 1px solid var(--red);   color: #ff7a7a; }
+    .alert.info { background: var(--gold-dim);     border: 1px solid var(--gold);  color: var(--gold-light); }
+
+    /* ── LOADING OVERLAY ── */
+    #loading {
+      position: fixed; inset: 0;
+      background: rgba(11,26,53,.92);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    #loading.show { display: flex; }
+
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid var(--navy-border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── CONFIRM MODAL ── */
+    #modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(11,26,53,.85);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 998;
+      padding: 0 16px 32px;
+    }
+    #modal-overlay.show { display: flex; }
+
+    .modal-box {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      border-radius: 16px;
+      padding: 24px 20px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .modal-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+
+    .modal-body {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-actions .btn { flex: 1; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">A processar...</div>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div id="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">Confirmar Fim</div>
+      <div class="modal-body" id="modal-body">Confirma o encerramento desta patrulha?</div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-red" onclick="executarFim()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">GNR</div>
+      <div>
+        <div class="header-title">Patrulha</div>
+        <div class="header-sub" id="header-sub">Sistema de Acompanhamento</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="gps-badge" id="gps-badge">
+        <div class="gps-dot"></div>
+        <span id="gps-label">GPS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN: LOGIN ═══ -->
+  <div class="screen" id="screen-login">
+    <div class="scroll-area">
+      <div class="login-emblem">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V13H5V8.26l7-3.89v8.62z"/>
+        </svg>
+      </div>
+      <div class="login-title">GNR</div>
+      <div class="login-sub">Sistema de Patrulha</div>
+
+      <div class="login-btn-wrap">
+        <button class="btn btn-primary" onclick="login()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+          Entrar com ArcGIS
+        </button>
+      </div>
+
+      <div class="redirect-note" id="redirect-note">
+        <p>⚠ Adicionar nas definições da aplicação ArcGIS</p>
+        <code id="redirect-uri-display">A calcular...</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN: FORM ═══ -->
+  <div class="screen" id="screen-form">
+    <div class="scroll-area">
+
+      <div class="alert err" id="form-alert"></div>
+
+      <div class="card">
+        <div class="card-title">Dados da Patrulha</div>
+
+        <div class="field">
+          <label>Grupo</label>
+          <div class="select-wrap">
+            <select id="sel-grupo" onchange="onGrupoChange()">
+              <option value="">Seleccionar...</option>
+              <option>GGC</option>
+              <option>GGF</option>
+              <option>GVA</option>
+              <option>CCCO</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Destacamento</label>
+          <div class="select-wrap">
+            <select id="sel-destacamento">
+              <option value="">— Seleccione o Grupo primeiro —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Tipo de Patrulha</label>
+          <div class="select-wrap">
+            <select id="sel-tipo">
+              <option value="">Seleccionar...</option>
+              <option>Terrestre</option>
+              <option>Marítima</option>
+              <option>Fluvial</option>
+              <option>Aérea</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Indicativo Rádio</label>
+          <input type="text" id="inp-indicativo" placeholder="Ex: GGC-01" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+      </div>
+
+      <button class="btn btn-green" id="btn-iniciar" onclick="iniciarPatrulha()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Iniciar Patrulha
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN: ACTIVA ═══ -->
+  <div class="screen" id="screen-activa">
+    <div class="scroll-area">
+
+      <!-- Status bar -->
+      <div class="status-bar" id="status-bar">
+        <div class="status-left">
+          <div class="pulse-ring"></div>
+          <div class="status-label">Patrulha Activa</div>
+        </div>
+        <div class="timer" id="timer-display">00:00:00</div>
+      </div>
+
+      <!-- Info tiles -->
+      <div class="info-grid">
+        <div class="info-tile">
+          <div class="tile-label">Grupo</div>
+          <div class="tile-value" id="info-grupo">—</div>
+        </div>
+        <div class="info-tile">
+          <div class="tile-label">Destacamento</div>
+          <div class="tile-value" id="info-destacamento" style="font-size:14px">—</div>
+        </div>
+        <div class="info-tile">
+          <div class="tile-label">Tipo</div>
+          <div class="tile-value" id="info-tipo">—</div>
+        </div>
+        <div class="info-tile">
+          <div class="tile-label">Indicativo</div>
+          <div class="tile-value" id="info-indicativo">—</div>
+        </div>
+      </div>
+
+      <!-- Position -->
+      <div class="pos-card">
+        <div>
+          <div class="pos-label">📍 Última posição transmitida</div>
+          <div class="pos-value" id="info-posicao">A aguardar GPS...</div>
+        </div>
+        <div class="pos-acc" id="info-acc"></div>
+      </div>
+
+      <!-- Inicio -->
+      <div class="info-tile" style="margin-bottom:14px">
+        <div class="tile-label">🕐 Início de Patrulha</div>
+        <div class="tile-value" id="info-inicio" style="font-size:15px">—</div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Fim de patrulha -->
+      <div class="card">
+        <div class="card-title">Encerrar Patrulha</div>
+
+        <div class="field">
+          <label id="lbl-distancia">KM Finais</label>
+          <input type="number" id="inp-distancia" placeholder="0.0" min="0" step="0.1" inputmode="decimal">
+        </div>
+
+        <button class="btn btn-red" onclick="pedirConfirmacaoFim()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+          Fim de Patrulha
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<script>
+// ════════════════════════════════════════════
+// CONFIGURAÇÃO
+// ════════════════════════════════════════════
+const CFG = {
+  portalUrl:        'https://sgmai.maps.arcgis.com',
+  clientId:         'vuIrSUGKM8X6UjWq',
+  featureLayerUrl:  'https://services5.arcgis.com/j4eW900wJsR0Vv9G/arcgis/rest/services/APP_Teste/FeatureServer/0'
+};
+
+// ════════════════════════════════════════════
+// DADOS
+// ════════════════════════════════════════════
+const DESTACAMENTOS = {
+  GGC:  ['Matosinhos','Figueira da Foz','Lisboa','Sines','Olhão'],
+  GGF:  ['DGF Matosinhos','DGF Lisboa','DGF Portimão'],
+  GVA:  ['DVM','DVA'],
+  CCCO: ['SIVICC']
+};
+
+const DISTANCIA_INFO = {
+  'Terrestre': { label: 'KM Finais',        unidade: 'km'              },
+  'Marítima':  { label: 'Milhas Náuticas',  unidade: 'milhas náuticas' },
+  'Fluvial':   { label: 'Milhas Náuticas',  unidade: 'milhas náuticas' },
+  'Aérea':     { label: 'Minutos de Voo',   unidade: 'minutos'         }
+};
+
+// ════════════════════════════════════════════
+// ESTADO
+// ════════════════════════════════════════════
+let token         = null;
+let patrulha      = null;   // patrulha activa
+let watchId       = null;
+let lastPos       = null;
+let timerInterval = null;
+let wakeLock      = null;
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+window.addEventListener('load', () => {
+  // Mostrar redirect URI
+  const redirectUri = window.location.origin + window.location.pathname;
+  document.getElementById('redirect-uri-display').textContent = redirectUri;
+
+  if (parseTokenFromUrl()) {
+    afterLogin();
+    return;
+  }
+
+  if (loadStoredToken()) {
+    afterLogin();
+    return;
+  }
+
+  showScreen('screen-login');
+});
+
+function afterLogin() {
+  document.getElementById('header-sub').textContent = 'Autenticado ✓';
+
+  // Ver se há patrulha activa guardada
+  const saved = localStorage.getItem('gnr_patrulha');
+  if (saved) {
+    try {
+      patrulha = JSON.parse(saved);
+      showScreen('screen-activa');
+      populateActiva();
+      startTimer();
+    } catch { localStorage.removeItem('gnr_patrulha'); }
+  } else {
+    showScreen('screen-form');
+  }
+
+  startGPS();
+}
+
+// ════════════════════════════════════════════
+// AUTH — OAuth2 Implicit Flow
+// ════════════════════════════════════════════
+function login() {
+  const redirectUri = window.location.origin + window.location.pathname;
+  const url = `${CFG.portalUrl}/sharing/rest/oauth2/authorize?` +
+    `client_id=${CFG.clientId}` +
+    `&response_type=token` +
+    `&expiration=20160` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+  window.location.href = url;
+}
+
+function parseTokenFromUrl() {
+  const hash = window.location.hash;
+  if (!hash.includes('access_token')) return false;
+  const params = new URLSearchParams(hash.substring(1));
+  const t = params.get('access_token');
+  if (!t) return false;
+  token = t;
+  localStorage.setItem('gnr_token', t);
+  localStorage.setItem('gnr_token_ts', String(Date.now()));
+  history.replaceState(null, '', window.location.pathname);
+  return true;
+}
+
+function loadStoredToken() {
+  const t  = localStorage.getItem('gnr_token');
+  const ts = localStorage.getItem('gnr_token_ts');
+  if (!t || !ts) return false;
+  const age = Date.now() - parseInt(ts, 10);
+  if (age > 13 * 24 * 3600 * 1000) { // 13 dias
+    localStorage.removeItem('gnr_token');
+    localStorage.removeItem('gnr_token_ts');
+    return false;
+  }
+  token = t;
+  return true;
+}
+
+// ════════════════════════════════════════════
+// GPS
+// ════════════════════════════════════════════
+function startGPS() {
+  if (!navigator.geolocation) {
+    setGPS('err', 'N/D');
+    return;
+  }
+  watchId = navigator.geolocation.watchPosition(onGPSOk, onGPSErr, {
+    enableHighAccuracy: true,
+    timeout: 30000,
+    maximumAge: 10000
+  });
+}
+
+function onGPSOk(pos) {
+  lastPos = {
+    lat: pos.coords.latitude,
+    lon: pos.coords.longitude,
+    acc: pos.coords.accuracy
+  };
+  setGPS('ok', `±${Math.round(lastPos.acc)}m`);
+
+  if (patrulha) {
+    updatePosicao();
+    document.getElementById('info-posicao').textContent =
+      `${lastPos.lat.toFixed(6)}, ${lastPos.lon.toFixed(6)}`;
+    document.getElementById('info-acc').textContent = `±${Math.round(lastPos.acc)} m`;
+  }
+}
+
+function onGPSErr(e) {
+  setGPS('err', 'Erro');
+  console.warn('GPS error:', e.message);
+}
+
+function setGPS(state, text) {
+  const badge = document.getElementById('gps-badge');
+  const label = document.getElementById('gps-label');
+  badge.className = 'gps-badge ' + state;
+  label.textContent = text;
+}
+
+// ════════════════════════════════════════════
+// UI — DROPDOWNS
+// ════════════════════════════════════════════
+function onGrupoChange() {
+  const grupo = document.getElementById('sel-grupo').value;
+  const sel   = document.getElementById('sel-destacamento');
+  sel.innerHTML = '';
+
+  if (!grupo) {
+    sel.innerHTML = '<option value="">— Seleccione o Grupo primeiro —</option>';
+    return;
+  }
+
+  sel.innerHTML = '<option value="">Seleccionar...</option>';
+  (DESTACAMENTOS[grupo] || []).forEach(d => {
+    const o = document.createElement('option');
+    o.value = o.textContent = d;
+    sel.appendChild(o);
+  });
+}
+
+// ════════════════════════════════════════════
+// INICIAR PATRULHA
+// ════════════════════════════════════════════
+async function iniciarPatrulha() {
+  const grupo       = document.getElementById('sel-grupo').value;
+  const destacamento= document.getElementById('sel-destacamento').value;
+  const tipo        = document.getElementById('sel-tipo').value;
+  const indicativo  = document.getElementById('inp-indicativo').value.trim();
+
+  if (!grupo || !destacamento || !tipo || !indicativo) {
+    showAlert('form-alert', 'Preencha todos os campos antes de iniciar.');
+    return;
+  }
+  if (!lastPos) {
+    showAlert('form-alert', 'Aguarde o GPS ficar disponível (indicador no topo).');
+    return;
+  }
+
+  showLoading('A registar patrulha...');
+
+  const inicio = new Date();
+  const feature = {
+    geometry: { x: lastPos.lon, y: lastPos.lat, spatialReference: { wkid: 4326 } },
+    attributes: {
+      grupo,
+      destacamento,
+      tipo_patrulha: tipo,
+      indicativo_radio: indicativo,
+      inicio_dt: inicio.getTime(),
+      estado: 'ativa',
+      gps_precisao: lastPos.acc
+    }
+  };
+
+  try {
+    const res = await addFeature(feature);
+    if (res?.addResults?.[0]?.success) {
+      patrulha = {
+        objectId:      res.addResults[0].objectId,
+        inicio:        inicio.toISOString(),
+        grupo, destacamento, tipo, indicativo
+      };
+      localStorage.setItem('gnr_patrulha', JSON.stringify(patrulha));
+      hideLoading();
+      showScreen('screen-activa');
+      populateActiva();
+      startTimer();
+      requestWakeLock();
+    } else {
+      hideLoading();
+      const err = res?.addResults?.[0]?.error?.description || JSON.stringify(res);
+      showAlert('form-alert', 'Erro ao registar: ' + err);
+    }
+  } catch (e) {
+    hideLoading();
+    showAlert('form-alert', 'Erro de ligação: ' + e.message);
+  }
+}
+
+// ════════════════════════════════════════════
+// ACTUALIZAR POSIÇÃO
+// ════════════════════════════════════════════
+async function updatePosicao() {
+  if (!patrulha || !lastPos) return;
+  try {
+    await updateFeature({
+      geometry: { x: lastPos.lon, y: lastPos.lat, spatialReference: { wkid: 4326 } },
+      attributes: {
+        OBJECTID: patrulha.objectId,
+        gps_precisao: lastPos.acc
+      }
+    });
+  } catch (e) { console.warn('Falha update posição:', e); }
+}
+
+// ════════════════════════════════════════════
+// FIM DE PATRULHA
+// ════════════════════════════════════════════
+function pedirConfirmacaoFim() {
+  const dist = parseFloat(document.getElementById('inp-distancia').value);
+  const lbl  = document.getElementById('lbl-distancia').textContent;
+
+  if (isNaN(dist) || dist < 0) {
+    alert('Insira um valor válido para ' + lbl);
+    return;
+  }
+
+  const info = DISTANCIA_INFO[patrulha.tipo] || {};
+  document.getElementById('modal-body').textContent =
+    `Patrulha de ${patrulha.tipo} — ${patrulha.grupo} / ${patrulha.destacamento}\n` +
+    `${lbl}: ${dist} ${info.unidade || ''}\n\nConfirmar encerramento?`;
+
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+async function executarFim() {
+  closeModal();
+  const dist = parseFloat(document.getElementById('inp-distancia').value);
+  const info = DISTANCIA_INFO[patrulha.tipo] || {};
+
+  showLoading('A encerrar patrulha...');
+
+  const fim = new Date();
+  const update = {
+    attributes: {
+      OBJECTID:          patrulha.objectId,
+      fim_dt:            fim.getTime(),
+      distancia:         dist,
+      unidade_distancia: info.unidade || '',
+      estado:            'terminada'
+    }
+  };
+  if (lastPos) {
+    update.geometry = { x: lastPos.lon, y: lastPos.lat, spatialReference: { wkid: 4326 } };
+  }
+
+  try {
+    const res = await updateFeature(update);
+    if (res?.updateResults?.[0]?.success) {
+      clearInterval(timerInterval);
+      if (wakeLock) { wakeLock.release(); wakeLock = null; }
+      patrulha = null;
+      localStorage.removeItem('gnr_patrulha');
+
+      // Reset form
+      ['sel-grupo','sel-tipo'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('sel-destacamento').innerHTML =
+        '<option value="">— Seleccione o Grupo primeiro —</option>';
+      document.getElementById('inp-indicativo').value = '';
+      document.getElementById('inp-distancia').value = '';
+
+      hideLoading();
+      showScreen('screen-form');
+    } else {
+      hideLoading();
+      alert('Erro ao encerrar patrulha. Tente novamente.');
+    }
+  } catch (e) {
+    hideLoading();
+    alert('Erro de ligação: ' + e.message);
+  }
+}
+
+// ════════════════════════════════════════════
+// ARCGIS REST API
+// ════════════════════════════════════════════
+async function addFeature(feature) {
+  const r = await fetch(`${CFG.featureLayerUrl}/addFeatures`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ features: JSON.stringify([feature]), f: 'json', token })
+  });
+  return r.json();
+}
+
+async function updateFeature(feature) {
+  const r = await fetch(`${CFG.featureLayerUrl}/updateFeatures`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ features: JSON.stringify([feature]), f: 'json', token })
+  });
+  return r.json();
+}
+
+// ════════════════════════════════════════════
+// TIMER
+// ════════════════════════════════════════════
+function startTimer() {
+  const inicio = new Date(patrulha.inicio);
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const diff = Date.now() - inicio.getTime();
+    const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
+    document.getElementById('timer-display').textContent = `${h}:${m}:${s}`;
+  }, 1000);
+}
+
+// ════════════════════════════════════════════
+// WAKE LOCK
+// ════════════════════════════════════════════
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (e) { console.warn('WakeLock indisponível:', e); }
+}
+
+// ════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function populateActiva() {
+  document.getElementById('info-grupo').textContent       = patrulha.grupo;
+  document.getElementById('info-destacamento').textContent= patrulha.destacamento;
+  document.getElementById('info-tipo').textContent        = patrulha.tipo;
+  document.getElementById('info-indicativo').textContent  = patrulha.indicativo;
+  document.getElementById('info-inicio').textContent      =
+    new Date(patrulha.inicio).toLocaleString('pt-PT');
+  document.getElementById('lbl-distancia').textContent    =
+    DISTANCIA_INFO[patrulha.tipo]?.label || 'Distância';
+}
+
+function showAlert(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
+function showLoading(msg) {
+  document.getElementById('loading-text').textContent = msg;
+  document.getElementById('loading').classList.add('show');
+}
+
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+</script>
+</body>
+</html>
