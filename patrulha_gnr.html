@@ -352,8 +352,8 @@
       </div>
 
       <!-- Input câmara (oculto) -->
-      <input type="file" id="media-input-foto"  accept="image/*"  capture="environment" style="display:none" onchange="onMediaCapturado(event,'foto')">
-      <input type="file" id="media-input-video" accept="video/*"  capture="environment" style="display:none" onchange="onMediaCapturado(event,'video')">
+      <input type="file" id="media-input-foto"  accept="image/*"  capture="environment" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0" onchange="onMediaCapturado(event,'foto')">
+      <input type="file" id="media-input-video" accept="video/*"  capture="environment" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0" onchange="onMediaCapturado(event,'video')">
 
       <!-- Botão de captura -->
       <button class="btn btn-primary" id="btn-capturar-media" onclick="abrirCamara()" style="margin-bottom:10px">
@@ -1287,7 +1287,25 @@ function fecharModalMedia() {
 
 function abrirCamara() {
   const inputId = mediaAtual.tipo === 'foto' ? 'media-input-foto' : 'media-input-video';
-  document.getElementById(inputId).click();
+  const input = document.getElementById(inputId);
+  // Reset para permitir seleccionar o mesmo ficheiro novamente
+  input.value = '';
+  // iOS Safari requer requestPermission antes de aceder à câmara
+  try {
+    input.click();
+  } catch(e) {
+    console.warn('Erro ao abrir câmara:', e);
+    // Fallback: criar input temporário
+    const tmp = document.createElement('input');
+    tmp.type = 'file';
+    tmp.accept = mediaAtual.tipo === 'foto' ? 'image/*' : 'video/*';
+    tmp.capture = 'environment';
+    tmp.style.cssText = 'position:fixed;top:-9999px;opacity:0';
+    tmp.onchange = (e) => onMediaCapturado(e, mediaAtual.tipo);
+    document.body.appendChild(tmp);
+    tmp.click();
+    setTimeout(() => document.body.removeChild(tmp), 5000);
+  }
 }
 
 function capturarMetadados() {
